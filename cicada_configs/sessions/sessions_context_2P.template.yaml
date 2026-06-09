@@ -1,0 +1,5 @@
+# Session list for context PSTH analysis
+# Copy this file to sessions_context_2P.yaml and fill in your local NWB paths.
+sessions:
+- identifier: MOUSE_DATE_TIME
+  path: /path/to/your/MOUSE_DATE_TIME.nwb

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+
+# Results / outputs
+results/
+
+# Session configs (machine-specific NWB paths — copy template and fill in locally)
+cicada_configs/sessions/*.yaml
+!cicada_configs/sessions/*.template.yaml
+
+# Claude Code
+cicada_ai_helpers/
+CLAUDE.md

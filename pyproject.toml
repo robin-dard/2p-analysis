@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "2p-analysis"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "cicada_analysis @ git+https://gitlab.com/cossartlab/cicada_analysis.git@0.3.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["utils*"]
