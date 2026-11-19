@@ -1,0 +1,3 @@
+@cicada_ai_helpers/cicada_claude.md
+@cicada_ai_helpers/cicada_nwb_api.md
+@cicada_ai_helpers/cicada_tools_api.md

@@ -1,0 +1,11 @@
+# CICADA session list
+# Add or remove entries as needed.
+sessions:
+- identifier: RD109_20260415_104113
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD109_20260415_104113.nwb
+- identifier: RD116_20260506_081338
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD116_20260506_081338.nwb
+- identifier: RD116_20260508_105234
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD116_20260508_105234.nwb
+- identifier: RD119_20260507_105903
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD119_20260507_105903.nwb

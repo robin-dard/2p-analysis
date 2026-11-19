@@ -1,0 +1,29 @@
+# CICADA session list
+# Add or remove entries as needed.
+sessions:
+- identifier: RD134_20260928_125444
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20260928_125444.nwb
+- identifier: RD134_20260929_142345
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20260929_142345.nwb
+- identifier: RD134_20260930_125528
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20260930_125528.nwb
+- identifier: RD134_20261001_123736
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261001_123736.nwb
+- identifier: RD134_20261002_142851
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261002_142851.nwb
+- identifier: RD134_20261003_124230
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261003_124230.nwb
+- identifier: RD134_20261004_141237
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261004_141237.nwb
+- identifier: RD134_20261005_122930
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261005_122930.nwb
+- identifier: RD134_20261006_124016
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261006_124016.nwb
+- identifier: RD134_20261007_170650
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261007_170650.nwb
+- identifier: RD134_20261008_124518
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261008_124518.nwb
+- identifier: RD134_20261009_143428
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261009_143428.nwb
+- identifier: RD134_20261010_123155
+  path: Z:/analysis/Robin_Dard/NWB/2p_project\RD134_20261010_123155.nwb
