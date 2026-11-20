@@ -6,10 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "2p-analysis"
 version = "0.1.0"
 requires-python = ">=3.11"
+# Not meant to be installed: documents the env (run in the cicada_petersen env, see README.md)
 dependencies = [
-    "cicada_analysis @ git+https://gitlab.com/cossartlab/cicada_analysis.git@0.3.1",
+    "cicada-nwb>=0.4.0,<0.5",
+    "cicada-analysis>=0.4.0,<0.5",
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["utils*"]
+include = ["pilot_tools*"]

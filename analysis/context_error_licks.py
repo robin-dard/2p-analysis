@@ -13,7 +13,7 @@ Stages (see --help):
   extract : per session tongue traces + per-trial metrics + block features -> results/context_error_licks/lik<thr>/
   plot    : figures + stats from the saved tables (no NWB access)
 
-Environment: cicada3.0_env (cicada_analysis / cicada_nwb 'revision' branch). Shared code: utils/tongue_dlc.py.
+Environment: cicada_petersen (cicada-nwb / cicada-analysis 0.4).
 """
 import os
 import sys
@@ -24,12 +24,12 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root, for pilot_tools
 from cicada_analysis.cicada_tools.display.core_plots import save_figure
 from cicada_analysis.cicada_tools.stats.stats import bh_reject
 
-from utils import tongue_dlc
-from utils.tongue_dlc import CONTEXT_ORDER, LICK_ORDER, TIME_GRID, DT, WINDOW, CLF_FEATURES, print_dlc_checks
+from pilot_tools import tongue_dlc
+from pilot_tools.tongue_dlc import CONTEXT_ORDER, LICK_ORDER, TIME_GRID, DT, CLF_FEATURES, print_dlc_checks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SESSIONS_YAML = os.path.join(ROOT, 'cicada_configs', 'sessions', 'sessions_Context_sessions_expert_WF_jrGECO.yaml')

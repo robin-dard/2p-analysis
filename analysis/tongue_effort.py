@@ -15,26 +15,24 @@ Notes on the NWB content (checked on PB187_20240820):
   - stored 'tongue_distance' is the distance to the image origin -> recomputed relative to a mouth anchor
   - 'tongue_dlc_licks' events use frame_index / rate instead of video timestamps -> licks are re-detected here
 
-Environment: cicada3.0_env (cicada_analysis / cicada_nwb 'revision' branch, editable installs).
+Environment: cicada_petersen (cicada-nwb / cicada-analysis 0.4).
 """
 import os
 import sys
 import argparse
-import warnings
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.io import read_sessions_yaml
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root, for pilot_tools
+from pilot_tools.io import read_sessions_yaml
 
 from cicada_analysis.cicada_tools.display.core_plots import save_figure
 from cicada_analysis.cicada_tools.stats.stats import bh_reject
 
-from utils import tongue_dlc
-from utils.tongue_dlc import (CONTEXT_LABELS, CONTEXT_ORDER, LICK_LABELS, LICK_ORDER, WINDOW, DT, TIME_GRID,
+from pilot_tools import tongue_dlc
+from pilot_tools.tongue_dlc import (CONTEXT_ORDER, LICK_LABELS, LICK_ORDER, WINDOW, DT, TIME_GRID,
                               PRE_OUTCOME_METRICS, PERSISTENCE_METRICS, CLF_FEATURES, print_dlc_checks)
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -53,7 +51,7 @@ OPTO_PALETTE = dict(zip(OPTO_ORDER, ['grey', 'tab:orange', 'tab:purple', 'tab:cy
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Stage 1 - extraction (shared code in utils/tongue_dlc.py)
+# Stage 1 - extraction (shared code in pilot_tools/tongue_dlc.py)
 # ----------------------------------------------------------------------------------------------------------------------
 def label_opto(trial_table):
     labels = pd.Series(np.nan, index=trial_table.index, dtype=object)
@@ -322,23 +320,6 @@ def fig_h1_h2(metrics, out):
     save_figure(fig, out, 'fig6_h1_vs_h2', save_formats=['png', 'pdf'])
 
 
-def fit_group_effect(d, metric, ref, test):
-    """Mixed model metric ~ group (test vs ref), random intercept per mouse. Returns (coef, pval, n_ref, n_test)."""
-    import statsmodels.formula.api as smf
-    d = d[d.group.isin([ref, test])][['mouse_id', 'group', metric]].dropna()
-    n_ref, n_test = (d.group == ref).sum(), (d.group == test).sum()
-    if n_ref < 5 or n_test < 5:
-        return np.nan, np.nan, n_ref, n_test
-    d = d.assign(is_test=(d.group == test).astype(int))
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            res = smf.mixedlm(f'{metric} ~ is_test', d, groups=d['mouse_id']).fit(reml=True)
-        return res.params['is_test'], res.pvalues['is_test'], n_ref, n_test
-    except Exception:
-        return np.nan, np.nan, n_ref, n_test
-
-
 def run_stats(metrics, out, fdr_q=0.05):
     comparisons = [('H1', PRE_OUTCOME_METRICS, 'R-ctrl', 'NR-spot'),          # misinterpretation: expect ~0
                    ('H1-ref', PRE_OUTCOME_METRICS, 'NR-ctrl', 'NR-spot'),
@@ -353,7 +334,7 @@ def run_stats(metrics, out, fdr_q=0.05):
             if name == 'baseline' and spot != OPTO_ORDER[1]:
                 continue
             for col in cols:
-                coef, p, n_ref, n_test = fit_group_effect(d, col, ref, test)
+                coef, p, n_ref, n_test = tongue_dlc.fit_group_effect(d, col, ref, test)
                 pm = d.groupby(['group', 'mouse_id'], observed=True)[col].mean()
                 n_mice_same_sign = np.nan
                 if ref in pm.index.get_level_values(0) and test in pm.index.get_level_values(0):

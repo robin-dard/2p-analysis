@@ -1,5 +1,5 @@
 """
-Shared tongue-kinematics extraction from DLC side-view data (cicada_nwb revision branch).
+Shared tongue-kinematics extraction from DLC side-view data.
 
 Used by analysis/tongue_effort.py (opto inactivation) and analysis/context_error_licks.py (context blocks).
 
@@ -20,7 +20,7 @@ from cicada_analysis.cicada_tools.core.array_utils import find_nearest
 from cicada_analysis.cicada_tools.core.event_alignment import align_array_to_events, window_to_frames
 from cicada_analysis.cicada_tools.core.period_utils import get_continous_time_periods
 
-from utils.io import read_sessions_yaml
+from pilot_tools.io import read_sessions_yaml
 
 DLC_PARTS = ['tongue_x', 'tongue_y', 'tongue_likelihood', 'spout_x', 'spout_y', 'spout_likelihood',
              'jaw_ref_x', 'jaw_ref_y', 'jaw_ref_likelihood']   # side-view BehavioralTimeSeries

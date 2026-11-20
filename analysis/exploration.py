@@ -1,3 +1,7 @@
+"""
+Per-session exploration of the RD13x mice: NaN check, single-cell and population PSTHs (all / good / bad cells by
+suite2p QC) for several input signals, and single-cell spike count heatmaps.
+"""
 import os
 import sys
 import numpy as np
@@ -7,8 +11,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch, Rectangle
 from tqdm import tqdm
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # Needed if not in calcium_analysis env
-from utils.io import read_sessions_yaml
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root, for pilot_tools
+from pilot_tools.io import sessions_yaml, results_dir, read_sessions_yaml
 
 from cicada_nwb import NWBSession
 from cicada_analysis.cicada_tools.imaging.psth_utils import build_psth_dataframe
@@ -44,13 +48,10 @@ str_cols = ['session_id', 'mouse_id', 'trial_type', 'condition']
 for input_data in data_keys:
     rrs_keys = rrs_module_keys + [input_data]
     for group in groups:
-        sessions_yaml_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cicada_configs', 'sessions', f'sessions_{group}_2P.yaml')
-        results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'results', 'psth', group)
-        os.makedirs(results_path, exist_ok=True)
-
-        nwb_files, mice_list = read_sessions_yaml(sessions_yaml_path)
+        nwb_files, mice_list = read_sessions_yaml(sessions_yaml(f'{group}_2P'))
         if nwb_files is None:
             continue
+        results_path = results_dir('exploration', group)
 
         for nwb_path in tqdm(nwb_files):
             with NWBSession(nwb_path) as session_data:
@@ -104,7 +105,7 @@ for input_data in data_keys:
                                         'neuropil_ratio_max': cell_qc['neuropil_ratio_max'],
                                         'contamination': cell_qc['contamination'],
                                         'motion_r': cell_qc['motion_r'],
-                                        'goood_cells': cell_qc['good_cells'],
+                                        'good_cells': cell_qc['good_cells'],
                                         }
                     )
                     # Memory: strings as categories, floats as float32 (df_psth reaches ~10^7 rows per session)
@@ -234,3 +235,4 @@ for input_data in data_keys:
 
             # Free memory before the next session
             del df_psth_session, cell_psth_session, filtered_cell_psth_session
+            plt.close('all')
