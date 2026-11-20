@@ -20,9 +20,10 @@ from cicada_analysis.cicada_tools.connectivity.pairwise_cell_similarity import (
 # ----------------------------------------------------------------------------------------------------------------------
 # Parameters
 # ----------------------------------------------------------------------------------------------------------------------
-session_lists = ['auditory_2P', 'whisker_2P', 'context_naive_2P', 'context_expert_2P']
+session_lists = ['RSP_context_batch1']  # 'sessions_' will be added as prefix in the code
 rrs_keys = ['ophys', 'fluorescence_all_cells', 'dff']
-snr_threshold = 0.3
+snr_threshold = 4
+keep_only_good_cells = True
 response_window = 0.20  # s
 min_trials_per_flag = 7
 
@@ -36,7 +37,8 @@ def plot_matrix(data, out, filename, labels, sep_lines, vmax):
 def session_flag_similarity(session_data, out):
     """Trial similarity of one session; saves its figures and returns (flags, avg (n_flags, n_flags) matrix)."""
     session_id = session_data.session_id
-    ci = load_ci(session_data, rrs_keys, snr_threshold=snr_threshold)
+    mouse_id = session_data.subject_id
+    ci = load_ci(session_data, rrs_keys, snr_threshold=snr_threshold, only_good_cells=keep_only_good_cells)
     trial_table = session_data.behavior.get_trial_table()
 
     # Trial flags; drop the flags with fewer than min_trials_per_flag trials
@@ -54,8 +56,8 @@ def session_flag_similarity(session_data, out):
     sorted_corr, flags, block_edges, avg_corr = block_average_matrix(corr, t_flag)
     tqdm.write(f'{len(flags)} trial flags: ' + ', '.join(f'{f} (n={(t_flag == f).sum()})' for f in flags))
 
-    plot_matrix(sorted_corr, out, f'{session_id}_trial_similarity', flags, block_edges, vmax=0.5)
-    plot_matrix(avg_corr, out, f'{session_id}_avg_flag_similarity', flags, list(range(1, len(flags))), vmax=0.4)
+    plot_matrix(sorted_corr, os.path.join(out, mouse_id), f'{session_id}_trial_similarity', flags, block_edges, vmax=0.5)
+    plot_matrix(avg_corr, os.path.join(out, mouse_id), f'{session_id}_avg_flag_similarity', flags, list(range(1, len(flags))), vmax=0.4)
     return flags, avg_corr
 
 

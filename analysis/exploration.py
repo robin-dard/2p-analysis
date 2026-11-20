@@ -20,10 +20,12 @@ from cicada_analysis.cicada_tools.core.event_alignment import align_array_to_tim
 from cicada_analysis.cicada_tools.display.core_plots import save_figure
 
 # Global params
-groups = ['rd130', 'rd132', 'rd134']
+mice = ['rd130', 'rd132', 'rd134']
 rrs_module_keys = ['ophys', 'fluorescence_all_cells']
 data_keys =  ['dff', 'dff_masked', 'infered_spike_rate', 'infered_spike_count']
-snr_threshold = None
+snr_threshold = 5
+snr_threshold_ex_cells = 9
+filter_cells = True
 window_s = (0.750, 1.5)
 n_heatmap_cells = 10
 context_order = [1, 0]  # order of the colors in color_palettes lists
@@ -47,7 +49,7 @@ str_cols = ['session_id', 'mouse_id', 'trial_type', 'condition']
 # Execution
 for input_data in data_keys:
     rrs_keys = rrs_module_keys + [input_data]
-    for group in groups:
+    for group in mice:
         nwb_files, mice_list = read_sessions_yaml(sessions_yaml(f'{group}_2P'))
         if nwb_files is None:
             continue
@@ -63,7 +65,7 @@ for input_data in data_keys:
                 mouse_id = session_data.subject_id
 
                 # Saving path
-                results_subfolder = os.path.join(results_path, session_id)
+                results_subfolder = os.path.join(results_path, mouse_id, session_id)
                 os.makedirs(results_subfolder, exist_ok=True)
 
                 # Calcium imaging
@@ -185,8 +187,13 @@ for input_data in data_keys:
             # Figures
             tqdm.write(f'Plotting {session_id}...')
 
-            # Single cells
-            fig = sns.relplot(data=df_psth_session.loc[df_psth_session.roi < 10],
+            # Single cells PSTHs
+            df_plot = df_psth_session.loc[(df_psth_session.good_cells == True) & 
+                                          (df_psth_session.snr > snr_threshold_ex_cells)].reset_index(drop=True)
+            rng = np.random.default_rng(0)
+            pool = df_plot.roi.unique()
+            rois = np.sort(rng.choice(pool, size=min(10, len(pool)), replace=False))
+            fig = sns.relplot(data=df_plot[df_plot.roi.isin(rois)],
                         col='roi', row='trial_type', x='time', y='activity', kind='line',
                         hue='condition', palette=condition_palette, hue_order=condition_order,
                         row_order=list(color_palettes),
@@ -195,9 +202,18 @@ for input_data in data_keys:
                 ax.axvline(x=0, ymin=0, ymax=1, lw=1, ls='--', c='k')
             save_figure(fig.figure, results_subfolder, f'single_cell_psth_{rrs_keys[2]}', save_formats=['png'])
 
-            # Population all cells
+            # Population PSTHs
             tqdm.write(f'All : {len(cell_psth_session.roi.unique())} cells at start')
-            fig = sns.relplot(data=cell_psth_session, 
+            if filter_cells:
+                df_plot = cell_psth_session.loc[(cell_psth_session.good_cells == True) & 
+                                                (cell_psth_session.snr > snr_threshold)]
+                suffix = 'good_cells'
+                tqdm.write(f'All : {len(df_plot.roi.unique())} cells after filtering')
+            else:
+                df_plot = cell_psth_session
+                suffix = ''
+
+            fig = sns.relplot(data=df_plot, 
                         col='trial_type', row='context',
                         x='time', y='activity', kind='line',
                         hue='condition', palette=condition_palette, hue_order=condition_order,
@@ -205,34 +221,6 @@ for input_data in data_keys:
                         size='lick_flag', sizes=[3, 1], size_order=[1, 0])
             for ax in fig.axes.flat:
                 ax.axvline(x=0, ymin=0, ymax=1, lw=1, ls='--', c='k')
-            save_figure(fig.figure, results_subfolder, f'population_psth_{rrs_keys[2]}', save_formats=['png'])
+            save_figure(fig.figure, results_subfolder, 
+                        f'population_psth_{rrs_keys[2]}_{suffix}', save_formats=['png'])
 
-            # Population cleaned (good cells)
-            filtered_cell_psth_session = cell_psth_session.loc[(cell_psth_session.good_cells == True)]
-            tqdm.write(f'Good : {len(filtered_cell_psth_session.roi.unique())} cells after filtering')
-            fig = sns.relplot(data=filtered_cell_psth_session, 
-                        col='trial_type', row='context', 
-                        x='time', y='activity', kind='line',
-                        hue='condition', palette=condition_palette, hue_order=condition_order,
-                        col_order=list(color_palettes), row_order=context_order,
-                        size='lick_flag', sizes=[3, 1], size_order=[1, 0])
-            for ax in fig.axes.flat:
-                ax.axvline(x=0, ymin=0, ymax=1, lw=1, ls='--', c='k')
-            save_figure(fig.figure, results_subfolder, f'population_clean_psth_{rrs_keys[2]}', save_formats=['png'])
-
-            # Population just bad cells
-            filtered_cell_psth_session = cell_psth_session.loc[cell_psth_session.good_cells == False]
-            tqdm.write(f'Bad : {len(filtered_cell_psth_session.roi.unique())} cells after filtering')
-            fig = sns.relplot(data=filtered_cell_psth_session, 
-                        col='trial_type', row='context', 
-                        x='time', y='activity', kind='line',
-                        hue='condition', palette=condition_palette, hue_order=condition_order,
-                        col_order=list(color_palettes), row_order=context_order,
-                        size='lick_flag', sizes=[3, 1], size_order=[1, 0])
-            for ax in fig.axes.flat:
-                ax.axvline(x=0, ymin=0, ymax=1, lw=1, ls='--', c='k')
-            save_figure(fig.figure, results_subfolder, f'population_bad_psth_{rrs_keys[2]}', save_formats=['png'])
-
-            # Free memory before the next session
-            del df_psth_session, cell_psth_session, filtered_cell_psth_session
-            plt.close('all')

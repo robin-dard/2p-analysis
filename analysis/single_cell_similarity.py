@@ -23,9 +23,10 @@ from cicada_analysis.cicada_tools.display.core_plots import save_figure
 # ----------------------------------------------------------------------------------------------------------------------
 # Parameters
 # ----------------------------------------------------------------------------------------------------------------------
-session_lists = ['context_naive_2P', 'context_expert_2P']
+session_lists = ['RSP_context_batch1']
 rrs_keys = ['ophys', 'fluorescence_all_cells', 'dff']
-snr_threshold = 0.3
+snr_threshold = 4
+only_good_cells = True
 contexts = {'rewarded': 1, 'norewarded': 0}
 n_clusters = [2, 3, 4]
 with_surrogate = False
@@ -105,8 +106,9 @@ if __name__ == '__main__':
         for nwb_path in tqdm(nwb_files):
             with NWBSession(nwb_path) as session_data:
                 session_id = session_data.session_id
+                mouse_id = session_data.subject_id
                 tqdm.write(f"\nProcessing {session_id}...")
-                ci = load_ci(session_data, rrs_keys, snr_threshold=snr_threshold)
+                ci = load_ci(session_data, rrs_keys, snr_threshold=snr_threshold, only_good_cells=only_good_cells)
                 tqdm.write(f"{ci['traces'].shape[0]} neurons left after filtering")
                 trial_table = session_data.behavior.get_trial_table()
 
@@ -118,10 +120,11 @@ if __name__ == '__main__':
                 mean_corr[name].append(np.nanmean(data_corr[~np.eye(data_corr.shape[0], dtype=bool)]))
                 plot_similarity_matrix(data=data_corr, filename=f'{session_id}_cell_similarity_{name}',
                                        colormap='viridis', vmin=0, vmax=vmax, size_fig=(8, 8),
-                                       save_fig=True, path_results=out, save_formats=['png'])
+                                       save_fig=True, path_results=os.path.join(out, mouse_id), save_formats=['png'])
                 tqdm.write('Clustering correlation')
-                plot_clustering(data_corr, cluster_similarity(data_corr), out, f'{session_id}_cell_clustering_{name}')
+                plot_clustering(data_corr, cluster_similarity(data_corr), 
+                                os.path.join(out, mouse_id), f'{session_id}_cell_clustering_{name}')
                 plt.close('all')
 
-        plot_mean_correlation(mean_corr, out)
+        plot_mean_correlation(mean_corr, os.path.join(out, mouse_id))
         plt.close('all')

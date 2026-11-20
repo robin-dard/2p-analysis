@@ -10,6 +10,8 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from tqdm import tqdm
+
 from pilot_tools.imaging import cell_type_array
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -60,7 +62,7 @@ def read_sessions_yaml(file_path):
     return nwb_files, mice_list
 
 
-def load_ci(session, rrs_keys, snr_threshold=None):
+def load_ci(session, rrs_keys, snr_threshold=None, only_good_cells=True):
     """Calcium imaging data of one session for one ROI response series.
 
     Returns a dict: traces (n_cells, n_frames), timestamps (n_frames,), sampling_rate, cell_types (n_cells,) str
@@ -76,8 +78,15 @@ def load_ci(session, rrs_keys, snr_threshold=None):
             'cell_types': cell_type_array(ci.get_cell_indices_by_cell_type(rrs_keys), traces.shape[0]),
             'snr': snr,
             'cell_indices': np.arange(traces.shape[0])}
+    tqdm.write(f"{data['traces'].shape[0]} cells")
     if snr_threshold is not None:
         keep = snr > snr_threshold
         for key in ['traces', 'cell_types', 'snr', 'cell_indices']:
             data[key] = data[key][keep]
+        tqdm.write(f"{data['traces'].shape[0]} cells with SNR higher than {snr_threshold}")
+    if only_good_cells:
+        good = ci.get_good_cells(rrs_keys)[keep]
+        for key in ['traces', 'cell_types', 'snr', 'cell_indices']:
+            data[key] = data[key][good]
+        tqdm.write(f"{data['traces'].shape[0]} cells labelled as good cells")
     return data
