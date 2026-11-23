@@ -21,7 +21,8 @@ from cicada_analysis.cicada_tools.display.core_plots import save_figure
 # ----------------------------------------------------------------------------------------------------------------------
 session_list = 'RSP_context_batch1'
 rrs_keys = ['ophys', 'fluorescence_all_cells', 'dff']
-snr_threshold = 0.3
+snr_threshold = 3
+keep_only_good_cells = True
 window_s = (0.750, 1.5)
 color_palettes = {'auditory_trial': ['royalblue', 'lightblue'],
                   'whisker_trial': ['darkgreen', 'lightgreen'],
@@ -33,7 +34,7 @@ color_palettes = {'auditory_trial': ['royalblue', 'lightblue'],
 # ----------------------------------------------------------------------------------------------------------------------
 def session_psth(session_data):
     """Long-format PSTH table of one session: one row per roi x trial x time. Also returns the sampling rate."""
-    ci = load_ci(session_data, rrs_keys)
+    ci = load_ci(session_data, rrs_keys, snr_threshold=snr_threshold, only_good_cells=keep_only_good_cells)
     for ctype in np.unique(ci['cell_types']):
         tqdm.write(f"{ctype}: {(ci['cell_types'] == ctype).sum()} neurons")
     trial_table = session_data.behavior.get_trial_table()

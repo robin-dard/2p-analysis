@@ -27,7 +27,9 @@ snr_threshold = 5
 snr_threshold_ex_cells = 9
 filter_cells = True
 window_s = (0.750, 1.5)
-n_heatmap_cells = 10
+n_example_cells = 10             # single cell PSTHs and spike count heatmaps
+example_first_cells = False      # True: first cells passing the cut (= highest SNR); False: random (seeded)
+seed = 0
 context_order = [1, 0]  # order of the colors in color_palettes lists
 outcome_order = [1, 0]  # lick, no lick
 color_palettes = {'auditory_trial' : ['royalblue', 'lightblue'],
@@ -37,6 +39,17 @@ color_palettes = {'auditory_trial' : ['royalblue', 'lightblue'],
 
 def condition_label(ttype, context):
     return f'{ttype} | ctx {int(context)}'
+
+
+def pick_example_rois(cell_qc):
+    """Example ROIs of a session: good cells with snr > snr_threshold_ex_cells. Depends only on the ROI table
+    (+ seed), so the same cells are shown for every input signal."""
+    good = np.asarray(cell_qc['good_cells'], dtype=bool)
+    pool = np.flatnonzero(good & (np.asarray(cell_qc['snr'], dtype=float) > snr_threshold_ex_cells))
+    n = min(n_example_cells, pool.size)
+    if example_first_cells:
+        return pool[:n]
+    return np.sort(np.random.default_rng(seed).choice(pool, size=n, replace=False))
 
 
 # Flat palette for the trial type x context conditions
@@ -72,6 +85,8 @@ for input_data in data_keys:
                 traces = session_data.calcium_imaging.get_roi_response_serie_data(rrs_keys)
                 cell_qc = session_data.calcium_imaging.get_cells_qc(rrs_keys)
                 frame_timestamps = session_data.calcium_imaging.get_roi_response_serie_timestamps(rrs_keys)
+                example_rois = pick_example_rois(cell_qc)
+                tqdm.write(f"Example cells: {example_rois.tolist()}")
 
                 # NaN check
                 nan_mask = np.isnan(traces)
@@ -119,8 +134,8 @@ for input_data in data_keys:
 
                 # Single cells spike count heatmap: one line per trial, raw counts
                 # Per trial type row: ctx 1 lick | ctx 1 no lick | ctx 0 lick | ctx 0 no lick
-                if rrs_keys[2].endswith('spike_count'):
-                    n_cells_to_plot = min(n_heatmap_cells, traces.shape[0])
+                if rrs_keys[2].endswith('spike_count') and example_rois.size > 0:
+                    n_cells_to_plot = example_rois.size
                     trial_types = list(color_palettes)
                     bar_w = 0.06 * (window_s[0] + window_s[1])
                     fig, axes = plt.subplots(len(trial_types), n_cells_to_plot, squeeze=False,
@@ -141,7 +156,7 @@ for input_data in data_keys:
                             continue
                         subset = pd.concat([trials for _, _, trials in blocks])
                         # (n_cells, n_trials, n_t)
-                        aligned = align_array_to_timestamps(traces[:n_cells_to_plot], subset['start_time'].values,
+                        aligned = align_array_to_timestamps(traces[example_rois], subset['start_time'].values,
                                                             frame_timestamps, window_s, subtract_baseline=False)
                         for cell in range(n_cells_to_plot):
                             ax = axes[row, cell]
@@ -159,7 +174,7 @@ for input_data in data_keys:
                                     ax.axhline(y=y0 - 0.5, lw=0.8, c='k')
                             ax.set_xlim(-window_s[0] - bar_w, window_s[1])
                             if row == 0:
-                                ax.set_title(f'roi {cell}')
+                                ax.set_title(f'roi {example_rois[cell]}')
                             if cell == 0:
                                 ax.set_ylabel(f'{ttype}\ntrials')
                             if row == len(trial_types) - 1:
@@ -188,13 +203,10 @@ for input_data in data_keys:
             tqdm.write(f'Plotting {session_id}...')
 
             # Single cells PSTHs
-            df_plot = df_psth_session.loc[(df_psth_session.good_cells == True) & 
-                                          (df_psth_session.snr > snr_threshold_ex_cells)].reset_index(drop=True)
-            rng = np.random.default_rng(0)
-            pool = df_plot.roi.unique()
-            rois = np.sort(rng.choice(pool, size=min(10, len(pool)), replace=False))
-            fig = sns.relplot(data=df_plot[df_plot.roi.isin(rois)],
-                        col='roi', row='trial_type', x='time', y='activity', kind='line',
+            # Same example cells as the heatmaps and as the other input signals (pick_example_rois)
+            df_plot = df_psth_session.loc[df_psth_session.roi.isin(example_rois)].reset_index(drop=True)
+            fig = sns.relplot(data=df_plot,
+                        col='roi', col_order=list(example_rois), row='trial_type', x='time', y='activity', kind='line',
                         hue='condition', palette=condition_palette, hue_order=condition_order,
                         row_order=list(color_palettes),
                         size='lick_flag', sizes=[3, 1], size_order=[1, 0])

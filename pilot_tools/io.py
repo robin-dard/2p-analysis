@@ -85,7 +85,7 @@ def load_ci(session, rrs_keys, snr_threshold=None, only_good_cells=True):
             data[key] = data[key][keep]
         tqdm.write(f"{data['traces'].shape[0]} cells with SNR higher than {snr_threshold}")
     if only_good_cells:
-        good = ci.get_good_cells(rrs_keys)[keep]
+        good = ci.get_good_cells(rrs_keys)[keep] if snr_threshold is not None else ci.get_good_cells(rrs_keys)
         for key in ['traces', 'cell_types', 'snr', 'cell_indices']:
             data[key] = data[key][good]
         tqdm.write(f"{data['traces'].shape[0]} cells labelled as good cells")

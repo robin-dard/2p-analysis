@@ -12,8 +12,8 @@ names as the preprocessing):
   example_cells_f_dff_rate_spikes F raw, dF/F, rate, spike count of example cells, artifacts shaded
 
 From the NWB: artifact frames = frames NaN for every cell in dff_masked; noise_rel = frame noise of dff_masked
-(equal to the preprocessing one for every cell kept, see compute_dff_updated); excluded cells and SNR from the ROI
-table. The min_detectable_spikes computed here is compared to the one stored in the NWB.
+(equal to the preprocessing one for every cell kept, see compute_dff_updated); excluded cells (not good_cells) and SNR
+from the ROI table. The min_detectable_spikes computed here is compared to the one stored in the NWB.
 """
 import os
 import sys
@@ -40,8 +40,6 @@ session_list = 'RSP_context_batch1'
 rrs_keys = {name: ['ophys', 'fluorescence_all_cells', name]
             for name in ['F_raw', 'dff', 'dff_masked', 'infered_spike_count', 'infered_spike_rate']}
 spike_exclusion_pad = 0          # s: spikes within this of an artifact frame are left out (0: artifact frames only)
-neuropil_ratio_threshold = 0.8   # cells with neuropil_ratio_max above are left out (None: no cut)
-contamination_threshold = 0.8    # cells with contamination above are left out (None: no cut)
 gap_s = 0.03                     # spiking frames closer than this (s) form one event
 n_spikes_to_plot = [1, 2, 3, 5, 10, 20]
 t_before, t_after = 0.2, 1       # dF/F window around the spike (s)
@@ -73,15 +71,8 @@ def load_session(session_data):
     qc = ci.get_cells_qc(rrs_keys['dff'])
     n_cells = get['dff'].shape[0]
     qc_col = lambda col: np.asarray(qc[col], dtype=float) if col in qc else None
-    excluded = np.zeros(n_cells, dtype=bool)
-    excluded_by = {}
-    for col, threshold in [('neuropil_ratio_max', neuropil_ratio_threshold),
-                           ('contamination', contamination_threshold)]:
-        values = qc_col(col)
-        if threshold is None or values is None:
-            continue
-        excluded_by[col] = values > threshold
-        excluded |= excluded_by[col]
+    # good_cells (ROI table, NWB converter): |motion_r| < 0.5 & neuropil_ratio_max < 0.8 & snr > 3
+    excluded = ~np.asarray(qc['good_cells'], dtype=bool) if 'good_cells' in qc else np.zeros(n_cells, dtype=bool)
     return {'session_id': session_data.session_id,
             'raw': get['F_raw'],
             'dff': get['dff'] * 100,                                     # %
@@ -91,7 +82,7 @@ def load_session(session_data):
             'noise_rel': frame_noise(get['dff_masked']),                 # dF/F fraction
             'imaging_rate': ci.get_rrs_sampling_rate(rrs_keys['dff']),
             'snr': qc_col('snr'),
-            'excluded': excluded, 'excluded_by': excluded_by,
+            'excluded': excluded,
             'stored_mds': qc_col('min_detectable_spikes')}
 
 
@@ -367,8 +358,7 @@ def quantify(d, out, log):
     fr, n_cells = d['imaging_rate'], d['dff'].shape[0]
     spikes, excluded = d['spikes'], d['excluded']
     title = d['session_id']
-    for col, mask in d['excluded_by'].items():
-        log(f'{mask.sum()} cells with {col} > threshold: {np.flatnonzero(mask)}')
+    log(f'{excluded.sum()}/{n_cells} cells not good_cells (left out): {np.flatnonzero(excluded)}')
     if excluded.any():
         spikes = np.where(excluded[:, None], 0, spikes)  # no spike -> no event; cell indices stay those of dff
         title = f'{title} ({excluded.sum()} cells excluded)'
